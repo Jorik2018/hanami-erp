@@ -12,9 +12,92 @@ pipeline {
     RACK_ENV     = 'production'
     DATA_DIR   = 'D:\\apps\\hanami-erp'
     DATABASE_URL = 'sqlite:///D:/apps/hanami-erp/hanami_erp.sqlite3'
+        SQLITE_HOME = 'C:\\Tools\\sqlite'
+    SQLITE_EXE  = 'C:\\Tools\\sqlite\\sqlite3.exe'
     }
 
     stages {
+stage('Install SQLite CLI') {
+    steps {
+        powershell '''
+            $sqliteExe = $env:SQLITE_EXE
+
+            if (Test-Path $sqliteExe) {
+                Write-Host "SQLite CLI ya esta instalado:"
+                & $sqliteExe -version
+                exit 0
+            }
+
+            [Net.ServicePointManager]::SecurityProtocol = `
+                [Net.SecurityProtocolType]::Tls12
+
+            $sqliteHome = $env:SQLITE_HOME
+            $zipFile = Join-Path $env:TEMP "sqlite-tools.zip"
+            $extractDir = Join-Path $env:TEMP "sqlite-tools"
+
+            # SQLite 3.50.4 para Windows x64.
+            $url = "https://www.sqlite.org/2025/sqlite-tools-win-x64-3500400.zip"
+
+            if (-not (Test-Path $sqliteHome)) {
+                New-Item `
+                    -ItemType Directory `
+                    -Path $sqliteHome `
+                    -Force | Out-Null
+            }
+
+            if (Test-Path $extractDir) {
+                Remove-Item `
+                    -Path $extractDir `
+                    -Recurse `
+                    -Force
+            }
+
+            Write-Host "Descargando SQLite CLI..."
+            Invoke-WebRequest `
+                -UseBasicParsing `
+                -Uri $url `
+                -OutFile $zipFile
+
+            Expand-Archive `
+                -Path $zipFile `
+                -DestinationPath $extractDir `
+                -Force
+
+            $sourceExe = Get-ChildItem `
+                -Path $extractDir `
+                -Filter "sqlite3.exe" `
+                -Recurse |
+                Select-Object -First 1
+
+            if ($null -eq $sourceExe) {
+                throw "No se encontro sqlite3.exe en el archivo descargado."
+            }
+
+            Copy-Item `
+                -Path $sourceExe.FullName `
+                -Destination $sqliteExe `
+                -Force
+
+            if (-not (Test-Path $sqliteExe)) {
+                throw "SQLite CLI no fue instalado correctamente."
+            }
+
+            Write-Host "SQLite CLI instalado:"
+            & $sqliteExe -version
+
+            Remove-Item `
+                -Path $zipFile `
+                -Force `
+                -ErrorAction SilentlyContinue
+
+            Remove-Item `
+                -Path $extractDir `
+                -Recurse `
+                -Force `
+                -ErrorAction SilentlyContinue
+        '''
+    }
+}
 
         stage('Check Environment') {
             steps {
