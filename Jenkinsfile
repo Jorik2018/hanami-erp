@@ -8,12 +8,13 @@ pipeline {
         PORT        = '7783'
         RUBY_HOME = 'C:\\Tools\\Ruby33-x64'
 
-            HANAMI_ENV   = 'production'
-    RACK_ENV     = 'production'
-    DATA_DIR   = 'D:\\apps\\hanami-erp'
-    DATABASE_URL = 'sqlite:///D:/apps/hanami-erp/hanami_erp.sqlite3'
-        SQLITE_HOME = 'C:\\Tools\\sqlite'
-    SQLITE_EXE  = 'C:\\Tools\\sqlite\\sqlite3.exe'
+        HANAMI_ENV     = 'production'
+        RACK_ENV       = 'production'
+        DATA_DIR       = 'D:\\apps\\hanami-erp'
+        DATABASE_URL   = 'sqlite:///D:/apps/hanami-erp/hanami_erp.sqlite3'
+        SQLITE_HOME    = 'C:\\Tools\\sqlite'
+        SQLITE_EXE     = 'C:\\Tools\\sqlite\\sqlite3.exe'
+        BASE_PATH      = '/hanami'
     }
 
     stages {
@@ -299,6 +300,7 @@ stage('Run Migrations') {
         --env "DATABASE_URL=%DATABASE_URL%" ^
         --env "SESSION_SECRET=%SESSION_SECRET%" ^
         --env "PORT=%PORT%" ^
+        --env "BASE_PATH=%BASE_PATH%" ^
         --env "PATH=%RUBY_HOME%\\bin;C:\\Windows\\System32;C:\\Windows" ^
         --env "VAULT_TOKEN=%VAULT_TOKEN%" ^
         --env "JWT_PUBLIC_KEY=%JWT_PUBLIC_KEY%"
@@ -365,7 +367,7 @@ stage('Run Migrations') {
     post {
         success {
             echo 'Hanami ERP desplegado correctamente.'
-            echo 'URL interna: http://127.0.0.1:7781/'
+            echo 'URL interna: http://127.0.0.1:%PORT%/'
         }
 
         failure {
