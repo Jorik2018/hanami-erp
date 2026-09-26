@@ -11,53 +11,90 @@ pipeline {
 
     stages {
 
-        stage('Install Ruby') {
+stage('Install Ruby 3.3') {
     steps {
         powershell '''
-            $rubyExe = Join-Path $env:RUBY_HOME "bin\\ruby.exe"
+            $rubyDir = $env:RUBY_HOME
+            $rubyExe = Join-Path $rubyDir "bin\\ruby.exe"
+
+            if (Test-Path $rubyExe) {
+                Write-Host "Ruby ya esta instalado:"
+                & $rubyExe --version
+                exit 0
+            }
+
+            Write-Host "Ruby no encontrado. Instalando en: $rubyDir"
+
+            # PowerShell/.NET antiguo puede intentar TLS 1.0 o TLS 1.1.
+            # GitHub requiere TLS moderno.
+            [Net.ServicePointManager]::SecurityProtocol = `
+                [Net.SecurityProtocolType]::Tls12
+
+            if (-not (Test-Path "C:\\Tools")) {
+                New-Item `
+                    -ItemType Directory `
+                    -Path "C:\\Tools" `
+                    -Force | Out-Null
+            }
+
+            $version = "3.3.6-1"
+            $installerName = "rubyinstaller-devkit-$version-x64.exe"
+            $installer = Join-Path $env:TEMP $installerName
+
+            $url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-$version/$installerName"
+
+            Write-Host "Descargando RubyInstaller..."
+            Write-Host $url
+
+            Invoke-WebRequest `
+                -UseBasicParsing `
+                -Uri $url `
+                -OutFile $installer
+
+            if (-not (Test-Path $installer)) {
+                throw "No se pudo descargar RubyInstaller."
+            }
+
+            Write-Host "Instalando Ruby..."
+
+            $process = Start-Process `
+                -FilePath $installer `
+                -ArgumentList @(
+                    "/verysilent",
+                    "/suppressmsgboxes",
+                    "/norestart",
+                    "/dir=$rubyDir"
+                ) `
+                -Wait `
+                -PassThru
+
+            if ($process.ExitCode -ne 0) {
+                throw "El instalador de Ruby fallo con codigo $($process.ExitCode)"
+            }
 
             if (-not (Test-Path $rubyExe)) {
-                Write-Host "Ruby no encontrado. Instalando en: $env:RUBY_HOME"
-
-                $installerVersion = "3.3.6-1"
-                $installerName = "rubyinstaller-devkit-$installerVersion-x64.exe"
-
-                $url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-$installerVersion/$installerName"
-                $installerPath = Join-Path $env:TEMP $installerName
-
-                Invoke-WebRequest `
-                    -Uri $url `
-                    -OutFile $installerPath
-
-                Start-Process `
-                    -FilePath $installerPath `
-                    -ArgumentList @(
-                        "/verysilent",
-                        "/suppressmsgboxes",
-                        "/norestart",
-                        "/dir=$env:RUBY_HOME"
-                    ) `
-                    -Wait `
-                    -NoNewWindow
-
-                if (-not (Test-Path $rubyExe)) {
-                    throw "Ruby no fue instalado correctamente en $rubyExe"
-                }
+                throw "Ruby no fue instalado correctamente en $rubyExe"
             }
 
+            Write-Host "Ruby instalado:"
             & $rubyExe --version
 
-            if ($LASTEXITCODE -ne 0) {
-                throw "No fue posible ejecutar Ruby."
-            }
+            Write-Host "Verificando RubyGems..."
+            & $rubyExe -S gem --version
 
+            Write-Host "Instalando Bundler..."
             & $rubyExe -S gem install bundler --no-document
 
             if ($LASTEXITCODE -ne 0) {
-                throw "No fue posible instalar Bundler."
+                throw "No se pudo instalar Bundler."
             }
 
             & $rubyExe -S bundle --version
+
+            Remove-Item `
+                $installer `
+                -Force `
+                -ErrorAction SilentlyContinue
         '''
     }
 }
