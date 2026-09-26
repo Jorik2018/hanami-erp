@@ -116,12 +116,13 @@ stage('Generate Session Secret') {
                     $bytes = New-Object byte[] 64
                     [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
 
-                    [Convert]::ToHexString($bytes).ToLowerInvariant()
+                    [System.BitConverter]::ToString($bytes).Replace("-", "").ToLowerInvariant()
                 '''
             ).trim()
         }
     }
 }
+
 
 stage('Verify Application') {
     steps {
