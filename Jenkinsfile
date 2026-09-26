@@ -106,6 +106,23 @@ stage('Install Dependencies') {
         '''
     }
 }
+
+stage('Generate Session Secret') {
+    steps {
+        script {
+            env.SESSION_SECRET = powershell(
+                returnStdout: true,
+                script: '''
+                    $bytes = New-Object byte[] 64
+                    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+
+                    [Convert]::ToHexString($bytes).ToLowerInvariant()
+                '''
+            ).trim()
+        }
+    }
+}
+
 stage('Verify Application') {
     steps {
         bat '''
