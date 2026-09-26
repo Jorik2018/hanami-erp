@@ -8,11 +8,6 @@ pipeline {
         DEPLOY_DIR  = 'D:\\apps\\hanami-erp'
         PORT        = '7781'
         BASE_PATH   = ''
-
-        // Variables configuradas en el nodo/agente Jenkins:
-        // RUBY_HOME = C:\Ruby33-x64
-        // NSSM_EXE  = C:\tools\nssm\nssm.exe
-        // VAULT_ADDR = https://vault.ejemplo.local
     }
 
     stages {
@@ -160,65 +155,42 @@ pipeline {
             }
         }
 
-        stage('Configure Service') {
+        stage('Configure Service') { 
             steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'VAULT_TOKEN',
-                        variable: 'VAULT_TOKEN'
-                    )
-                ]) {
-                    bat '''
-                        sc query "%SERVICE_ID%" > nul 2>&1
+        withCredentials([
+            string(
+                credentialsId: 'VAULT_TOKEN',
+                variable: 'VAULT_TOKEN'
+            )
+        ]) {
+            bat '''
+                echo ==========================================
+                echo Configuring Dash Windows service
+                echo ==========================================
 
-                        if errorlevel 1 (
-                            echo Creando servicio %SERVICE_ID%...
+                "%PYTHON_HOME%\\python.exe" "%SERVICE_MANAGER%" install ^
+                    "%SERVICE_ID%" ^
+                    "%DEPLOY_DIR%" ^
+                    --name "%SERVICE_NAME%" ^
+                    --type ruby ^
+                    --main "dash_erp.app:server" ^
+                    --host "127.0.0.1:%PORT%" ^
+                    --env "VAULT_ADDR=%VAULT_ADDR%" ^
+                    --env "VAULT_TOKEN=%VAULT_TOKEN%"
 
-                            "%NSSM_EXE%" install "%SERVICE_ID%" "%RUBY_HOME%\\bin\\ruby.exe"
-
-                            if errorlevel 1 (
-                                echo ERROR: No se pudo crear el servicio.
-                                exit /B 1
-                            )
-                        )
-
-                        "%NSSM_EXE%" set "%SERVICE_ID%" Application "%RUBY_HOME%\\bin\\ruby.exe"
-                        "%NSSM_EXE%" set "%SERVICE_ID%" AppDirectory "%DEPLOY_DIR%"
-                        "%NSSM_EXE%" set "%SERVICE_ID%" AppParameters "-S bundle exec hanami server --host 127.0.0.1 --port %PORT%"
-                        "%NSSM_EXE%" set "%SERVICE_ID%" DisplayName "%SERVICE_NAME%"
-                        "%NSSM_EXE%" set "%SERVICE_ID%" Description "Aplicacion Hanami ERP"
-                        "%NSSM_EXE%" set "%SERVICE_ID%" Start SERVICE_AUTO_START
-
-                        "%NSSM_EXE%" set "%SERVICE_ID%" AppStdout "%DEPLOY_DIR%\\log\\service.log"
-                        "%NSSM_EXE%" set "%SERVICE_ID%" AppStderr "%DEPLOY_DIR%\\log\\service-error.log"
-                        "%NSSM_EXE%" set "%SERVICE_ID%" AppRotateFiles 1
-                        "%NSSM_EXE%" set "%SERVICE_ID%" AppRotateOnline 1
-
-                        "%NSSM_EXE%" set "%SERVICE_ID%" AppEnvironmentExtra ^
-                            "HANAMI_ENV=production" ^
-                            "RACK_ENV=production" ^
-                            "BASE_PATH=%BASE_PATH%" ^
-                            "VAULT_ADDR=%VAULT_ADDR%" ^
-                            "VAULT_TOKEN=%VAULT_TOKEN%"
-
-                        if errorlevel 1 (
-                            echo ERROR: No se pudo configurar el servicio.
-                            exit /B 1
-                        )
-                    '''
-                }
+                if errorlevel 1 (
+                    echo ERROR: Service configuration failed
+                    exit /B 1
+                )
+            '''
+        }
             }
         }
 
         stage('Start Service') {
             steps {
                 bat '''
-                    "%NSSM_EXE%" start "%SERVICE_ID%"
-
-                    if errorlevel 1 (
-                        echo ERROR: No se pudo iniciar el servicio.
-                        exit /B 1
-                    )
+                    "%PYTHON_HOME%\\python.exe" "%SERVICE_MANAGER%" start "%SERVICE_ID%"
                 '''
             }
         }
