@@ -7,6 +7,10 @@ pipeline {
         DEPLOY_DIR  = 'D:\\apps\\hanami-erp'
         PORT        = '7783'
         RUBY_HOME = 'C:\\Tools\\Ruby33-x64'
+
+            HANAMI_ENV   = 'production'
+    RACK_ENV     = 'production'
+    DATABASE_URL = 'sqlite://D:/data/hanami-erp/hanami_erp.sqlite3'
     }
 
     stages {
@@ -165,20 +169,32 @@ stage('Verify Application') {
 }
 
 
-        stage('Run Migrations') {
-            steps {
-                bat '''
-                    cd /D "%DEPLOY_DIR%"
+stage('Run Migrations') {
+    steps {
+        bat '''
+            cd /D "%DEPLOY_DIR%"
 
-                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec hanami db migrate
+            SET "PATH=%RUBY_HOME%\\bin;%PATH%"
 
-                    if errorlevel 1 (
-                        echo ERROR: Fallaron las migraciones.
-                        exit /B 1
-                    )
-                '''
-            }
-        }
+            if not exist "%DATA_DIR%" (
+                mkdir "%DATA_DIR%"
+            )
+
+            echo ==============================
+            echo DATABASE
+            echo ==============================
+
+            echo DATABASE_URL=%DATABASE_URL%
+
+            "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec hanami db migrate
+
+            if errorlevel 1 (
+                echo ERROR: Fallaron las migraciones.
+                exit /B 1
+            )
+        '''
+    }
+}
 
         stage('Configure Service') { 
             steps {
