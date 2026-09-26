@@ -107,37 +107,45 @@ stage('Install Dependencies') {
     }
 }
 
+stage('Verify Application') {
+    steps {
+        bat '''
+            cd /D "%DEPLOY_DIR%"
 
-        stage('Verify Application') {
-            steps {
-                bat '''
-                    cd /D "%DEPLOY_DIR%"
+            SET "PATH=%RUBY_HOME%\\bin;%PATH%"
 
-                    echo ==============================
-                    echo HANAMI
-                    echo ==============================
+            echo ==============================
+            echo RUBY
+            echo ==============================
 
-                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec hanami --version
+            ruby --version
+            where ruby
 
-                    if errorlevel 1 (
-                        echo ERROR: Hanami no esta disponible.
-                        exit /B 1
-                    )
+            echo ==============================
+            echo HANAMI
+            echo ==============================
 
-                    echo ==============================
-                    echo BOOT APPLICATION
-                    echo ==============================
+            "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec hanami --version
 
-                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec ruby ^
-                        -e "require_relative 'config/app'; puts 'Aplicacion Hanami OK'"
+            if errorlevel 1 (
+                echo ERROR: Hanami no esta disponible.
+                exit /B 1
+            )
 
-                    if errorlevel 1 (
-                        echo ERROR: La aplicacion no pudo inicializar.
-                        exit /B 1
-                    )
-                '''
-            }
-        }
+            echo ==============================
+            echo BOOT APPLICATION
+            echo ==============================
+
+            "%RUBY_HOME%\\bin\\ruby.exe" -rbundler/setup ^
+                -e "require_relative 'config/app'; puts 'Aplicacion Hanami OK'"
+
+            if errorlevel 1 (
+                echo ERROR: La aplicacion no pudo inicializar.
+                exit /B 1
+            )
+        '''
+    }
+}
 
         stage('Run Migrations') {
             steps {
