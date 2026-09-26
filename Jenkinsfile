@@ -71,26 +71,42 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                bat '''
-                    cd /D "%DEPLOY_DIR%"
+stage('Install Dependencies') {
+    steps {
+        bat '''
+            cd /D "%DEPLOY_DIR%"
 
-                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle config set path "vendor/bundle"
-                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle config set without "development test"
+            if exist "Gemfile.lock" (
+                del /F /Q "Gemfile.lock"
+            )
 
-                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle install ^
-                        --jobs 4 ^
-                        --retry 3 ^
-                        --deployment
+            if exist ".bundle" (
+                rmdir /S /Q ".bundle"
+            )
 
-                    if errorlevel 1 (
-                        echo ERROR: No se pudieron instalar las gemas.
-                        exit /B 1
-                    )
-                '''
-            }
-        }
+            "%RUBY_HOME%\\bin\\ruby.exe" -S bundle config set path "vendor/bundle"
+            "%RUBY_HOME%\\bin\\ruby.exe" -S bundle config set without "development test"
+            "%RUBY_HOME%\\bin\\ruby.exe" -S bundle config set deployment false
+
+            "%RUBY_HOME%\\bin\\ruby.exe" -S bundle install ^
+                --jobs 4 ^
+                --retry 3
+
+            if errorlevel 1 (
+                echo ERROR: No se pudieron instalar las gemas.
+                exit /B 1
+            )
+
+            "%RUBY_HOME%\\bin\\ruby.exe" -S bundle lock --add-platform x64-mingw-ucrt
+
+            if errorlevel 1 (
+                echo ERROR: No se pudo generar Gemfile.lock para Windows.
+                exit /B 1
+            )
+        '''
+    }
+}
+
 
         stage('Verify Application') {
             steps {
