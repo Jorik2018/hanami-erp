@@ -5,11 +5,64 @@ pipeline {
         SERVICE_ID  = 'hanami-erp'
         SERVICE_NAME = 'Hanami ERP'
         DEPLOY_DIR  = 'D:\\apps\\hanami-erp'
-        PORT        = '7781'
-        BASE_PATH   = ''
+        PORT        = '7783'
+        RUBY_HOME = 'C:\\Tools\\Ruby33-x64'
     }
 
     stages {
+
+        stage('Install Ruby') {
+    steps {
+        powershell '''
+            $rubyExe = Join-Path $env:RUBY_HOME "bin\\ruby.exe"
+
+            if (-not (Test-Path $rubyExe)) {
+                Write-Host "Ruby no encontrado. Instalando en: $env:RUBY_HOME"
+
+                $installerVersion = "3.3.6-1"
+                $installerName = "rubyinstaller-devkit-$installerVersion-x64.exe"
+
+                $url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-$installerVersion/$installerName"
+                $installerPath = Join-Path $env:TEMP $installerName
+
+                Invoke-WebRequest `
+                    -Uri $url `
+                    -OutFile $installerPath
+
+                Start-Process `
+                    -FilePath $installerPath `
+                    -ArgumentList @(
+                        "/verysilent",
+                        "/suppressmsgboxes",
+                        "/norestart",
+                        "/dir=$env:RUBY_HOME"
+                    ) `
+                    -Wait `
+                    -NoNewWindow
+
+                if (-not (Test-Path $rubyExe)) {
+                    throw "Ruby no fue instalado correctamente en $rubyExe"
+                }
+            }
+
+            & $rubyExe --version
+
+            if ($LASTEXITCODE -ne 0) {
+                throw "No fue posible ejecutar Ruby."
+            }
+
+            & $rubyExe -S gem install bundler --no-document
+
+            if ($LASTEXITCODE -ne 0) {
+                throw "No fue posible instalar Bundler."
+            }
+
+            & $rubyExe -S bundle --version
+        '''
+    }
+}
+
+
         stage('Check Environment') {
             steps {
                 bat '''
