@@ -257,31 +257,14 @@ stage('Run Migrations') {
         bat '''
             cd /D "%DEPLOY_DIR%"
 
-            SET "PATH=%RUBY_HOME%\\bin;%PATH%"
+            SET "PATH=%RUBY_HOME%\\bin;%SQLITE_HOME%;%PATH%"
 
-            if not exist "%DATA_DIR%" (
-                mkdir "%DATA_DIR%"
-            )
-
-            if not exist "%DATA_DIR%" (
-                echo ERROR: No se pudo crear el directorio de datos.
-                exit /B 1
-            )
-
-            echo test > "%DATA_DIR%\\jenkins-write-test.tmp"
+            where sqlite3
 
             if errorlevel 1 (
-                echo ERROR: Jenkins no tiene permisos de escritura en %DATA_DIR%.
+                echo ERROR: sqlite3.exe no esta disponible en PATH.
                 exit /B 1
             )
-
-            del /F /Q "%DATA_DIR%\\jenkins-write-test.tmp"
-
-            echo ==============================
-            echo DATABASE
-            echo ==============================
-
-            echo DATABASE_URL=%DATABASE_URL%
 
             "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec hanami db migrate
 
