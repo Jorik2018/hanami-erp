@@ -13,3 +13,7 @@
 
 - [Hanami](https://hanakai.org/hanami)
 - [Hanami guides](https://hanakai.org/learn#hanami)
+
+
+hanami assets compile
+

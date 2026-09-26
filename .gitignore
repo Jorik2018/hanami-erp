@@ -1,6 +1,5 @@
 .env
 log/*
-public/
 node_modules/
 spec/examples.txt
 coverage/
