@@ -1,10 +1,12 @@
-# frozen_string_literal: true
+# spec/actions/books/index_spec.rb
 
 RSpec.describe HanamiErp::Actions::Books::Index do
-  let(:params) { Hash[] }
+  subject(:action) do
+    HanamiErp::Actions::Books::Index.new
+  end
 
-  it "works" do
-    response = subject.call(params)
+  it "returns a successful response with empty params" do
+    response = action.call({})
     expect(response).to be_successful
   end
 end

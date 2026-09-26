@@ -1,0 +1,1284 @@
+{
+  "$schema": "https://raw.githubusercontent.com/simplecov-ruby/simplecov/main/schemas/coverage-v1.3.schema.json",
+  "meta": {
+    "schema_version": "1.3",
+    "simplecov_version": "1.3.1",
+    "command_name": "RSpec",
+    "command_names": [
+      "RSpec"
+    ],
+    "project_name": "Hanami erp",
+    "timestamp": "2026-09-26T10:14:00.474-05:00",
+    "root": "/Users/ealarcop/Projects/python/hanami_erp",
+    "commit": null,
+    "primary_coverage": "line",
+    "line_coverage": true,
+    "branch_coverage": true,
+    "method_coverage": false
+  },
+  "total": {
+    "lines": {
+      "covered": 100,
+      "missed": 0,
+      "omitted": 133,
+      "total": 100,
+      "percent": 100.0,
+      "strength": 1.51
+    },
+    "branches": {
+      "covered": 4,
+      "missed": 0,
+      "total": 4,
+      "percent": 100.0,
+      "strength": 1.5
+    }
+  },
+  "coverage": {
+    "app/action.rb": {
+      "source": [
+        "# auto_register: false",
+        "# frozen_string_literal: true",
+        "",
+        "require \"hanami/action\"",
+        "require \"dry/monads\"",
+        "",
+        "module HanamiErp",
+        "  class Action < Hanami::Action",
+        "    # Provide `Success` and `Failure` for pattern matching on operation results",
+        "    include Dry::Monads[:result]",
+        "",
+        "    handle_exception \"ROM::TupleCountMismatchError\" => :handle_not_found",
+        "",
+        "    private",
+        "",
+        "    def handle_not_found(request, response, exception)",
+        "      accept = request.get_header(\"HTTP_ACCEPT\").to_s",
+        "",
+        "      response.status = 404",
+        "",
+        "      if accept.include?(\"application/json\")",
+        "        response.headers[\"Content-Type\"] = \"application/json; charset=utf-8\"",
+        "        response.body = JSON.generate(",
+        "          error: \"not_found\",",
+        "          message: \"Resource not found\"",
+        "        )",
+        "       else",
+        "        response.headers[\"Content-Type\"] = \"text/html; charset=utf-8\"",
+        "        response.body = \"<h1>404 - Not found</h1>\"",
+        "      end",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        null,
+        1,
+        1,
+        null,
+        1,
+        1,
+        null,
+        1,
+        null,
+        1,
+        null,
+        1,
+        null,
+        1,
+        3,
+        null,
+        3,
+        null,
+        3,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null,
+        2,
+        2,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 15,
+      "missed_lines": 0,
+      "omitted_lines": 18,
+      "total_lines": 15,
+      "branches": [
+        {
+          "type": "then",
+          "start_line": 22,
+          "end_line": 26,
+          "coverage": 1,
+          "inline": false,
+          "report_line": 21
+        },
+        {
+          "type": "else",
+          "start_line": 28,
+          "end_line": 29,
+          "coverage": 2,
+          "inline": false,
+          "report_line": 27
+        }
+      ],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 2,
+      "missed_branches": 0,
+      "total_branches": 2
+    },
+    "app/actions/api/books/index.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Actions",
+        "    module API",
+        "      module Books",
+        "        class Index < HanamiErp::Action",
+        "          include Deps[\"services.books.list\"]",
+        "          def handle(request, response)",
+        "            from = request.params[:from].to_i",
+        "            limit = request.params[:limit].to_i",
+        "",
+        "            books = list.call(",
+        "              page: from,",
+        "              per_page: limit",
+        "            )",
+        "",
+        "            response.format = :json",
+        "            response.body = books.map(&:to_h).to_json",
+        "          end",
+        "        end",
+        "      end",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        null,
+        2,
+        null,
+        null,
+        null,
+        null,
+        2,
+        2,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 12,
+      "missed_lines": 0,
+      "omitted_lines": 13,
+      "total_lines": 12,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/actions/api/books/show.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Actions",
+        "    module API",
+        "      module Books",
+        "        class Show < HanamiErp::Action",
+        "include Deps[\"repos.book_repo\"]",
+        "",
+        "        params do",
+        "          required(:id).value(:integer)",
+        "        end",
+        "",
+        "        def handle(request, response)",
+        "          book = book_repo.get(request.params[:id])",
+        "",
+        "          response.format = :json",
+        "",
+        "          if book",
+        "            response.body = book.to_h.to_json",
+        "          else",
+        "            response.status = 404",
+        "            response.body = {error: \"not_found\"}.to_json",
+        "          end",
+        "        end",
+        "        end",
+        "      end",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        3,
+        null,
+        3,
+        null,
+        3,
+        2,
+        null,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 15,
+      "missed_lines": 0,
+      "omitted_lines": 15,
+      "total_lines": 15,
+      "branches": [
+        {
+          "type": "then",
+          "start_line": 20,
+          "end_line": 20,
+          "coverage": 2,
+          "inline": false,
+          "report_line": 19
+        },
+        {
+          "type": "else",
+          "start_line": 22,
+          "end_line": 23,
+          "coverage": 1,
+          "inline": false,
+          "report_line": 21
+        }
+      ],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 2,
+      "missed_branches": 0,
+      "total_branches": 2
+    },
+    "app/actions/books/index.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Actions",
+        "    module Books",
+        "      class Index < HanamiErp::Action",
+        "        def handle(request, response)",
+        "          response.render(",
+        "            view,",
+        "            page: request.params[:page] || 1,",
+        "            per_page: request.params[:per_page] || 2",
+        "          )",
+        "        end",
+        "      end",
+        "    end",
+        "  end",
+        "end",
+        ""
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 6,
+      "missed_lines": 0,
+      "omitted_lines": 12,
+      "total_lines": 6,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/actions/home/index.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Actions",
+        "    module Home",
+        "      class Index < HanamiErp::Action",
+        "        def handle(request, response)",
+        "        end",
+        "      end",
+        "    end",
+        "  end",
+        "end",
+        "",
+        ""
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        1,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 5,
+      "missed_lines": 0,
+      "omitted_lines": 9,
+      "total_lines": 5,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/db/relation.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "require \"hanami/db/relation\"",
+        "",
+        "module HanamiErp",
+        "  module DB",
+        "    class Relation < Hanami::DB::Relation",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        null,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 4,
+      "missed_lines": 0,
+      "omitted_lines": 6,
+      "total_lines": 4,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/db/repo.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "require \"hanami/db/repo\"",
+        "",
+        "module HanamiErp",
+        "  module DB",
+        "    class Repo < Hanami::DB::Repo",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        null,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 4,
+      "missed_lines": 0,
+      "omitted_lines": 6,
+      "total_lines": 4,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/relations/books.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Relations",
+        "    class Books < HanamiErp::DB::Relation",
+        "      schema :books, infer: true",
+        "      use :pagination",
+        "      per_page 2",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 6,
+      "missed_lines": 0,
+      "omitted_lines": 5,
+      "total_lines": 6,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/repos/book_repo.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Repos",
+        "    class BookRepo < HanamiErp::DB::Repo",
+        "      def all_by_title(page:, per_page:)",
+        "        books",
+        "          .select(:title, :author)",
+        "          .order(books[:title].asc)",
+        "          .page(page)",
+        "          .per_page(per_page)",
+        "          .to_a",
+        "      end",
+        "      def get(id)",
+        "        books.by_pk(id).one!",
+        "      end",
+        "      def create(attributes)",
+        "        books.changeset(:create, attributes).commit",
+        "      end",
+        "      def update(id, attributes)",
+        "        books.by_pk(id).changeset(:update, attributes).commit",
+        "      end",
+        "      def delete(id)",
+        "        books.by_pk(id).changeset(:delete).commit",
+        "      end",
+        "",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        1,
+        1,
+        1,
+        4,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        4,
+        null,
+        1,
+        13,
+        null,
+        1,
+        1,
+        null,
+        1,
+        14,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 13,
+      "missed_lines": 0,
+      "omitted_lines": 16,
+      "total_lines": 13,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/view.rb": {
+      "source": [
+        "# auto_register: false",
+        "# frozen_string_literal: true",
+        "",
+        "require \"hanami/view\"",
+        "",
+        "module HanamiErp",
+        "  class View < Hanami::View",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        null,
+        1,
+        null,
+        1,
+        1,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 3,
+      "missed_lines": 0,
+      "omitted_lines": 6,
+      "total_lines": 3,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/views/books/index.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Views",
+        "    module Books",
+        "      class Index < HanamiErp::View",
+        "        include Deps[\"repos.book_repo\"]",
+        "        expose :books do |page:, per_page:|",
+        "          book_repo.all_by_title(page:, per_page:)",
+        "        end",
+        "      end",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 7,
+      "missed_lines": 0,
+      "omitted_lines": 7,
+      "total_lines": 7,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/views/context.rb": {
+      "source": [
+        "# auto_register: false",
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Views",
+        "    class Context < Hanami::View::Context",
+        "      # Define your view context here. See https://hanakai.org/learn/hanami/views/context/ for details.",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        null,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 3,
+      "missed_lines": 0,
+      "omitted_lines": 7,
+      "total_lines": 3,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/views/helpers.rb": {
+      "source": [
+        "# auto_register: false",
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Views",
+        "    module Helpers",
+        "      # Add your view helpers here",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        null,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 3,
+      "missed_lines": 0,
+      "omitted_lines": 7,
+      "total_lines": 3,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    },
+    "app/views/home/index.rb": {
+      "source": [
+        "# frozen_string_literal: true",
+        "",
+        "module HanamiErp",
+        "  module Views",
+        "    module Home",
+        "      class Index < HanamiErp::View",
+        "      end",
+        "    end",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        null,
+        null,
+        1,
+        1,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 4,
+      "missed_lines": 0,
+      "omitted_lines": 6,
+      "total_lines": 4,
+      "branches": [],
+      "branches_covered_percent": 100.0,
+      "covered_branches": 0,
+      "missed_branches": 0,
+      "total_branches": 0
+    }
+  },
+  "groups": {
+    "Ungrouped": {
+      "lines": {
+        "covered": 100,
+        "missed": 0,
+        "omitted": 133,
+        "total": 100,
+        "percent": 100.0,
+        "strength": 1.51
+      },
+      "branches": {
+        "covered": 4,
+        "missed": 0,
+        "total": 4,
+        "percent": 100.0,
+        "strength": 1.5
+      },
+      "files": [
+        "app/action.rb",
+        "app/actions/api/books/index.rb",
+        "app/actions/api/books/show.rb",
+        "app/actions/books/index.rb",
+        "app/actions/home/index.rb",
+        "app/db/relation.rb",
+        "app/db/repo.rb",
+        "app/relations/books.rb",
+        "app/repos/book_repo.rb",
+        "app/view.rb",
+        "app/views/books/index.rb",
+        "app/views/context.rb",
+        "app/views/helpers.rb",
+        "app/views/home/index.rb"
+      ]
+    }
+  },
+  "errors": {},
+  "history": [
+    {
+      "created_at": "2026-09-26T13:57:32Z",
+      "branch": null,
+      "commit": null,
+      "totals": {
+        "line": 84.93,
+        "branch": 0.0
+      },
+      "groups": {
+        "Ungrouped": {
+          "line": 84.93,
+          "branch": 0.0
+        }
+      },
+      "files": {
+        "app/action.rb": {
+          "line": 53.33,
+          "branch": 0.0
+        },
+        "app/actions/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/relation.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/repo.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/relations/books.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/repos/book_repo.rb": {
+          "line": 69.23,
+          "branch": 100.0
+        },
+        "app/view.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/context.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/helpers.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      }
+    },
+    {
+      "created_at": "2026-09-26T14:38:11Z",
+      "branch": null,
+      "commit": null,
+      "totals": {
+        "line": 89.0,
+        "branch": 50.0
+      },
+      "groups": {
+        "Ungrouped": {
+          "line": 89.0,
+          "branch": 50.0
+        }
+      },
+      "files": {
+        "app/action.rb": {
+          "line": 53.33,
+          "branch": 0.0
+        },
+        "app/actions/api/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/api/books/show.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/relation.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/repo.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/relations/books.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/repos/book_repo.rb": {
+          "line": 69.23,
+          "branch": 100.0
+        },
+        "app/view.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/context.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/helpers.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      }
+    },
+    {
+      "created_at": "2026-09-26T14:42:34Z",
+      "branch": null,
+      "commit": null,
+      "totals": {
+        "line": 100.0,
+        "branch": 100.0
+      },
+      "groups": {
+        "Ungrouped": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      },
+      "files": {
+        "app/action.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/relation.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/relations/books.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/context.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      }
+    },
+    {
+      "created_at": "2026-09-26T14:42:52Z",
+      "branch": null,
+      "commit": null,
+      "totals": {
+        "line": 83.72,
+        "branch": 50.0
+      },
+      "groups": {
+        "Ungrouped": {
+          "line": 83.72,
+          "branch": 50.0
+        }
+      },
+      "files": {
+        "app/action.rb": {
+          "line": 53.33,
+          "branch": 0.0
+        },
+        "app/actions/api/books/show.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/relation.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/relations/books.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/context.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      }
+    },
+    {
+      "created_at": "2026-09-26T14:45:27Z",
+      "branch": null,
+      "commit": null,
+      "totals": {
+        "line": 82.81,
+        "branch": 0.0
+      },
+      "groups": {
+        "Ungrouped": {
+          "line": 82.81,
+          "branch": 0.0
+        }
+      },
+      "files": {
+        "app/action.rb": {
+          "line": 53.33,
+          "branch": 0.0
+        },
+        "app/actions/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/relation.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/repo.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/relations/books.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/repos/book_repo.rb": {
+          "line": 69.23,
+          "branch": 100.0
+        },
+        "app/view.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/context.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/helpers.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      }
+    },
+    {
+      "created_at": "2026-09-26T15:08:33Z",
+      "branch": null,
+      "commit": null,
+      "totals": {
+        "line": 96.0,
+        "branch": 100.0
+      },
+      "groups": {
+        "Ungrouped": {
+          "line": 96.0,
+          "branch": 100.0
+        }
+      },
+      "files": {
+        "app/action.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/api/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/api/books/show.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/relation.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/repo.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/relations/books.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/repos/book_repo.rb": {
+          "line": 69.23,
+          "branch": 100.0
+        },
+        "app/view.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/context.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/helpers.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      }
+    },
+    {
+      "created_at": "2026-09-26T15:10:53Z",
+      "branch": null,
+      "commit": null,
+      "totals": {
+        "line": 96.0,
+        "branch": 100.0
+      },
+      "groups": {
+        "Ungrouped": {
+          "line": 96.0,
+          "branch": 100.0
+        }
+      },
+      "files": {
+        "app/action.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/api/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/api/books/show.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/relation.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/repo.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/relations/books.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/repos/book_repo.rb": {
+          "line": 69.23,
+          "branch": 100.0
+        },
+        "app/view.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/context.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/helpers.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      }
+    },
+    {
+      "created_at": "2026-09-26T15:14:00Z",
+      "branch": null,
+      "commit": null,
+      "totals": {
+        "line": 100.0,
+        "branch": 100.0
+      },
+      "groups": {
+        "Ungrouped": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      },
+      "files": {
+        "app/action.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/api/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/api/books/show.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/actions/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/relation.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/db/repo.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/relations/books.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/repos/book_repo.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/view.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/books/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/context.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/helpers.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        },
+        "app/views/home/index.rb": {
+          "line": 100.0,
+          "branch": 100.0
+        }
+      }
+    }
+  ]
+}

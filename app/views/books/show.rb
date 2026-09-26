@@ -4,9 +4,10 @@ module HanamiErp
   module Views
     module Books
       class Show < HanamiErp::View
-        include Deps["persistence.rom"]
+        include Deps["repos.book_repo"]
+
         expose :book do |id:|
-          rom.relations[:books].by_pk(id).one!
+          book_repo.get(id)
         end
       end
     end

@@ -5,31 +5,18 @@ module HanamiErp
     module API
       module Books
         class Index < HanamiErp::Action
-          # def handle(request, response)
-          #   books = [
-          #     {title: "Test Driven Development"},
-          #     {title: "Practical Object-Oriented Design in Ruby"}
-          #   ]
-          #   response.format = :json
-          #   response.body = books.to_json
-          # end
-          include Deps["persistence.rom"]
-          params do
-            optional(:page).value(:integer, gt?: 0)
-            optional(:per_page).value(:integer, gt?: 0, lteq?: 100)
-          end
-
+          include Deps["services.books.list"]
           def handle(request, response)
-            halt 422, {errors: request.params.errors}.to_json unless request.params.valid?
-            books = rom.relations[:books]
-              .select(:title, :author)
-              .order(:title)
-              .page(request.params[:page] || 1)
-              .per_page(request.params[:per_page] || 5)
-              .to_a
+            from = request.params[:from].to_i
+            limit = request.params[:limit].to_i
+
+            books = list.call(
+              page: from,
+              per_page: limit
+            )
 
             response.format = :json
-            response.body = books.to_json
+            response.body = books.map(&:to_h).to_json
           end
         end
       end

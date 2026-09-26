@@ -1,3 +1,11 @@
-<h1><%= book[:title] %></h1>
+<!-- app/templates/books/show.html.erb -->
 
-<p>By <%= book[:author] %></p>
+<h1><%= book.title %></h1>
+
+<p>By <%= book.author %></p>
+
+<div>
+  <%= form_for :book, routes.path(:book, id: book.id), method: :delete do |f| %>
+    <%= f.submit "Delete" %>
+  <% end %>
+</div>

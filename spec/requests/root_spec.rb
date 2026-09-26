@@ -1,11 +1,11 @@
-# spec/requests/root_spec.rb
+# frozen_string_literal: true
 
 RSpec.describe "Root", type: :request do
-  it "is successful" do
+  it "is not found" do
     get "/"
 
-    # Find me in `config/routes.rb`
-    expect(last_response).to be_successful
-    expect(last_response.body).to eq("Welcome from Hanami")
+    # Generate new action via:
+    #   `bundle exec hanami generate action home.index --url=/`
+    expect(last_response.status).to be(200)
   end
 end

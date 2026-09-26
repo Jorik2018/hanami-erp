@@ -8,10 +8,11 @@ module HanamiErp
           response.render(
             view,
             page: request.params[:page] || 1,
-            per_page: request.params[:per_page] || 5
+            per_page: request.params[:per_page] || 2
           )
         end
       end
     end
   end
 end
+
