@@ -168,7 +168,6 @@ stage('Verify Application') {
     }
 }
 
-
 stage('Run Migrations') {
     steps {
         bat '''
@@ -179,6 +178,20 @@ stage('Run Migrations') {
             if not exist "%DATA_DIR%" (
                 mkdir "%DATA_DIR%"
             )
+
+            if not exist "%DATA_DIR%" (
+                echo ERROR: No se pudo crear el directorio de datos.
+                exit /B 1
+            )
+
+            echo test > "%DATA_DIR%\\jenkins-write-test.tmp"
+
+            if errorlevel 1 (
+                echo ERROR: Jenkins no tiene permisos de escritura en %DATA_DIR%.
+                exit /B 1
+            )
+
+            del /F /Q "%DATA_DIR%\\jenkins-write-test.tmp"
 
             echo ==============================
             echo DATABASE
@@ -195,6 +208,7 @@ stage('Run Migrations') {
         '''
     }
 }
+
 
         stage('Configure Service') { 
             steps {
