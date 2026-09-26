@@ -4,3 +4,4 @@ public/
 node_modules/
 spec/examples.txt
 coverage/
+Gemfile.lock
