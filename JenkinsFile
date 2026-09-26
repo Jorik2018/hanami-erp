@@ -1,0 +1,283 @@
+```groovy
+pipeline {
+    agent any
+
+    environment {
+        SERVICE_ID  = 'hanami-erp'
+        SERVICE_NAME = 'Hanami ERP'
+        DEPLOY_DIR  = 'D:\\apps\\hanami-erp'
+        PORT        = '7781'
+        BASE_PATH   = ''
+
+        // Variables configuradas en el nodo/agente Jenkins:
+        // RUBY_HOME = C:\Ruby33-x64
+        // NSSM_EXE  = C:\tools\nssm\nssm.exe
+        // VAULT_ADDR = https://vault.ejemplo.local
+    }
+
+    stages {
+        stage('Check Environment') {
+            steps {
+                bat '''
+                    echo ==============================
+                    echo RUBY
+                    echo ==============================
+
+                    "%RUBY_HOME%\\bin\\ruby.exe" --version
+                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle --version
+
+                    echo ==============================
+                    echo GIT
+                    echo ==============================
+
+                    git --version
+
+                    echo ==============================
+                    echo NSSM
+                    echo ==============================
+
+                    "%NSSM_EXE%" version
+                '''
+            }
+        }
+
+        stage('Stop Service') {
+            steps {
+                bat '''
+                    sc query "%SERVICE_ID%" > nul 2>&1
+
+                    if not errorlevel 1 (
+                        echo Deteniendo servicio %SERVICE_ID%...
+
+                        "%NSSM_EXE%" stop "%SERVICE_ID%" > nul 2>&1
+
+                        timeout /T 3 /NOBREAK > nul
+                    ) else (
+                        echo El servicio no existe todavia. Se creara durante el despliegue.
+                    )
+
+                    exit /B 0
+                '''
+            }
+        }
+
+        stage('Deploy Files') {
+            steps {
+                powershell '''
+                    $source = $env:WORKSPACE
+                    $destination = $env:DEPLOY_DIR
+
+                    if (-not (Test-Path $destination)) {
+                        New-Item `
+                            -ItemType Directory `
+                            -Path $destination `
+                            -Force | Out-Null
+                    }
+
+                    robocopy `
+                        $source `
+                        $destination `
+                        /MIR `
+                        /XD ".git" "vendor" "tmp" "log" ".bundle" `
+                        /XF ".env" "*.log"
+
+                    $code = $LASTEXITCODE
+
+                    # Robocopy: codigos 0 a 7 indican exito.
+                    if ($code -gt 7) {
+                        throw "Robocopy fallo con codigo $code"
+                    }
+
+                    exit 0
+                '''
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                bat '''
+                    cd /D "%DEPLOY_DIR%"
+
+                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle config set path "vendor/bundle"
+                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle config set without "development test"
+
+                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle install ^
+                        --jobs 4 ^
+                        --retry 3 ^
+                        --deployment
+
+                    if errorlevel 1 (
+                        echo ERROR: No se pudieron instalar las gemas.
+                        exit /B 1
+                    )
+                '''
+            }
+        }
+
+        stage('Verify Application') {
+            steps {
+                bat '''
+                    cd /D "%DEPLOY_DIR%"
+
+                    echo ==============================
+                    echo HANAMI
+                    echo ==============================
+
+                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec hanami --version
+
+                    if errorlevel 1 (
+                        echo ERROR: Hanami no esta disponible.
+                        exit /B 1
+                    )
+
+                    echo ==============================
+                    echo BOOT APPLICATION
+                    echo ==============================
+
+                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec ruby ^
+                        -e "require_relative 'config/app'; puts 'Aplicacion Hanami OK'"
+
+                    if errorlevel 1 (
+                        echo ERROR: La aplicacion no pudo inicializar.
+                        exit /B 1
+                    )
+                '''
+            }
+        }
+
+        stage('Run Migrations') {
+            steps {
+                bat '''
+                    cd /D "%DEPLOY_DIR%"
+
+                    "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec hanami db migrate
+
+                    if errorlevel 1 (
+                        echo ERROR: Fallaron las migraciones.
+                        exit /B 1
+                    )
+                '''
+            }
+        }
+
+        stage('Configure Service') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'VAULT_TOKEN',
+                        variable: 'VAULT_TOKEN'
+                    )
+                ]) {
+                    bat '''
+                        sc query "%SERVICE_ID%" > nul 2>&1
+
+                        if errorlevel 1 (
+                            echo Creando servicio %SERVICE_ID%...
+
+                            "%NSSM_EXE%" install "%SERVICE_ID%" "%RUBY_HOME%\\bin\\ruby.exe"
+
+                            if errorlevel 1 (
+                                echo ERROR: No se pudo crear el servicio.
+                                exit /B 1
+                            )
+                        )
+
+                        "%NSSM_EXE%" set "%SERVICE_ID%" Application "%RUBY_HOME%\\bin\\ruby.exe"
+                        "%NSSM_EXE%" set "%SERVICE_ID%" AppDirectory "%DEPLOY_DIR%"
+                        "%NSSM_EXE%" set "%SERVICE_ID%" AppParameters "-S bundle exec hanami server --host 127.0.0.1 --port %PORT%"
+                        "%NSSM_EXE%" set "%SERVICE_ID%" DisplayName "%SERVICE_NAME%"
+                        "%NSSM_EXE%" set "%SERVICE_ID%" Description "Aplicacion Hanami ERP"
+                        "%NSSM_EXE%" set "%SERVICE_ID%" Start SERVICE_AUTO_START
+
+                        "%NSSM_EXE%" set "%SERVICE_ID%" AppStdout "%DEPLOY_DIR%\\log\\service.log"
+                        "%NSSM_EXE%" set "%SERVICE_ID%" AppStderr "%DEPLOY_DIR%\\log\\service-error.log"
+                        "%NSSM_EXE%" set "%SERVICE_ID%" AppRotateFiles 1
+                        "%NSSM_EXE%" set "%SERVICE_ID%" AppRotateOnline 1
+
+                        "%NSSM_EXE%" set "%SERVICE_ID%" AppEnvironmentExtra ^
+                            "HANAMI_ENV=production" ^
+                            "RACK_ENV=production" ^
+                            "BASE_PATH=%BASE_PATH%" ^
+                            "VAULT_ADDR=%VAULT_ADDR%" ^
+                            "VAULT_TOKEN=%VAULT_TOKEN%"
+
+                        if errorlevel 1 (
+                            echo ERROR: No se pudo configurar el servicio.
+                            exit /B 1
+                        )
+                    '''
+                }
+            }
+        }
+
+        stage('Start Service') {
+            steps {
+                bat '''
+                    "%NSSM_EXE%" start "%SERVICE_ID%"
+
+                    if errorlevel 1 (
+                        echo ERROR: No se pudo iniciar el servicio.
+                        exit /B 1
+                    )
+                '''
+            }
+        }
+
+        stage('Verify Service') {
+            steps {
+                bat '''
+                    sc query "%SERVICE_ID%" | findstr /I "RUNNING"
+
+                    if errorlevel 1 (
+                        echo ERROR: El servicio no esta en ejecucion.
+                        exit /B 1
+                    )
+                '''
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                powershell '''
+                    $url = "http://127.0.0.1:$env:PORT/$env:BASE_PATH/"
+                    $maxAttempts = 10
+
+                    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+                        Write-Host "Health check $attempt/$maxAttempts: $url"
+
+                        try {
+                            $response = Invoke-WebRequest `
+                                -UseBasicParsing `
+                                -Uri $url `
+                                -TimeoutSec 5
+
+                            if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
+                                Write-Host "Hanami ERP disponible."
+                                exit 0
+                            }
+                        }
+                        catch {
+                            Write-Host "Hanami ERP aun no responde."
+                        }
+
+                        Start-Sleep -Seconds 3
+                    }
+
+                    throw "Hanami ERP no respondio al health check: $url"
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Hanami ERP desplegado correctamente.'
+            echo 'URL interna: http://127.0.0.1:7781/'
+        }
+
+        failure {
+            echo 'Fallo desplegando Hanami ERP.'
+        }
+    }
+}
+```
