@@ -10,7 +10,7 @@ pipeline {
 
             HANAMI_ENV   = 'production'
     RACK_ENV     = 'production'
-    DATABASE_URL = 'sqlite:///D:/data/hanami-erp/hanami_erp.sqlite3'
+    DATABASE_URL = 'sqlite:///D:\\data\\hanami-erp\\hanami_erp.sqlite3'
     }
 
     stages {
