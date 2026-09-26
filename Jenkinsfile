@@ -293,7 +293,6 @@ stage('Run Migrations') {
         --description "%SERVICE_DESCRIPTION%" ^
         --type rust ^
         --executable "%RUBY_HOME%\\bin\\ruby.exe" ^
-        --args "-S bundle exec hanami server --host 127.0.0.1 --port %PORT%" ^
         --env "HANAMI_ENV=production" ^
         --env "RACK_ENV=production" ^
         --env "DATABASE_URL=%DATABASE_URL%" ^
