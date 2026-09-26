@@ -106,7 +106,6 @@ stage('Install Dependencies') {
         '''
     }
 }
-
 stage('Verify Application') {
     steps {
         bat '''
@@ -146,6 +145,7 @@ stage('Verify Application') {
         '''
     }
 }
+
 
         stage('Run Migrations') {
             steps {
