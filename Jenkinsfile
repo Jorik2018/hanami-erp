@@ -286,25 +286,24 @@ stage('Run Migrations') {
                     )
                 ]) {
                     bat '''
-                        echo ==========================================
-                        echo Configuring Dash Windows service
-                        echo ==========================================
+    "%PYTHON_HOME%\\python.exe" "%SERVICE_MANAGER%" install ^
+        "%SERVICE_ID%" ^
+        "%DEPLOY_DIR%" ^
+        --name "%SERVICE_NAME%" ^
+        --description "%SERVICE_DESCRIPTION%" ^
+        --type rust ^
+        --executable "%RUBY_HOME%\\bin\\ruby.exe" ^
+        --arguments "-S bundle exec hanami server --host 127.0.0.1 --port %PORT%" ^
+        --env "HANAMI_ENV=production" ^
+        --env "RACK_ENV=production" ^
+        --env "DATABASE_URL=%DATABASE_URL%" ^
+        --env "SESSION_SECRET=%SESSION_SECRET%" ^
+        --env "PORT=%PORT%" ^
+        --env "PATH=%RUBY_HOME%\\bin;C:\\Windows\\System32;C:\\Windows" ^
+        --env "VAULT_TOKEN=%VAULT_TOKEN%" ^
+        --env "JWT_PUBLIC_KEY=%JWT_PUBLIC_KEY%"
+'''
 
-                        "%PYTHON_HOME%\\python.exe" "%SERVICE_MANAGER%" install ^
-                            "%SERVICE_ID%" ^
-                            "%DEPLOY_DIR%" ^
-                            --name "%SERVICE_NAME%" ^
-                            --type ruby ^
-                            --main "dash_erp.app:server" ^
-                            --host "127.0.0.1:%PORT%" ^
-                            --env "VAULT_ADDR=%VAULT_ADDR%" ^
-                            --env "VAULT_TOKEN=%VAULT_TOKEN%"
-        
-                        if errorlevel 1 (
-                            echo ERROR: Service configuration failed
-                            exit /B 1
-                        )
-                    '''
                 }
             }
         }
