@@ -212,6 +212,35 @@ stage('Generate Session Secret') {
     }
 }
 
+stage('Compile Assets') {
+    steps {
+        bat '''
+            cd /D "%DEPLOY_DIR%"
+
+            SET "PATH=%RUBY_HOME%\\bin;%PATH%"
+
+            echo ==============================
+            echo COMPILE HANAMI ASSETS
+            echo ==============================
+
+            "%RUBY_HOME%\\bin\\ruby.exe" -S bundle exec hanami assets compile
+
+            if errorlevel 1 (
+                echo ERROR: No se pudieron compilar los assets.
+                exit /B 1
+            )
+
+            if not exist "public\\assets\\assets.json" (
+                echo ERROR: No se genero public\\assets\\assets.json.
+                exit /B 1
+            )
+
+            echo Assets compilados correctamente.
+            dir "public\\assets"
+        '''
+    }
+}
+
 
 stage('Verify Application') {
     steps {
