@@ -8,6 +8,7 @@ module HanamiErp
   class Action < Hanami::Action
     # Provide `Success` and `Failure` for pattern matching on operation results
     include Dry::Monads[:result]
+    include HanamiErp::BasePath
 
     handle_exception "ROM::TupleCountMismatchError" => :handle_not_found
 
@@ -29,5 +30,7 @@ module HanamiErp
         response.body = "<h1>404 - Not found</h1>"
       end
     end
+
+    
   end
 end

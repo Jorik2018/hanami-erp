@@ -1,16 +1,18 @@
-<!-- app/templates/books/new.html.erb -->
+<% base_path = ENV.fetch("BASE_PATH", "").strip.delete_suffix("/") %>
 
 <h1>New book</h1>
 
-<%= form_for :book, routes.path(:books) do |f| %>
+<%= form_for :book, "#{base_path}#{routes.path(:books)}" do |f| %>
   <div>
     <%= f.label "Title", for: :title %>
     <%= f.text_field :title %>
   </div>
+
   <div>
     <%= f.label "Author", for: :author %>
     <%= f.text_field :author %>
   </div>
+
   <div>
     <%= f.submit "Create" %>
   </div>

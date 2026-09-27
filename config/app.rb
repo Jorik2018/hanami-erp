@@ -2,6 +2,10 @@
 
 require "hanami"
 
+require_relative "../lib/hanami_erp/base_path_redirect"
+
+Hanami::Action::Response.prepend(HanamiErp::BasePathRedirect)
+
 module HanamiErp
   class App < Hanami::App
     config.actions.sessions = :cookie, {

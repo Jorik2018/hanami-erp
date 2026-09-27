@@ -6,14 +6,14 @@ module HanamiErp
       module Books
         class Create < HanamiErp::Action
           def handle(request, response)
-include Deps["repos.book_repo"]
+            include Deps["repos.book_repo"]
 
-        params do
-          required(:book).hash do
-            required(:title).filled(:string)
-            required(:author).filled(:string)
-          end
-        end
+            params do
+              required(:book).hash do
+                required(:title).filled(:string)
+                required(:author).filled(:string)
+              end
+            end
 
         def handle(request, response)
           if request.params.valid?
