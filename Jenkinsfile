@@ -335,30 +335,38 @@ stage('Run Migrations') {
             steps {
                 powershell '''
                     $url = "http://127.0.0.1:$env:PORT/$env:BASE_PATH/"
+
                     $maxAttempts = 10
 
                     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-                        Write-Host "Health check $attempt/$maxAttempts: $url"
+
+                        Write-Host "Health check $attempt/$maxAttempts"
+                        Write-Host $url
 
                         try {
+
                             $response = Invoke-WebRequest `
                                 -UseBasicParsing `
                                 -Uri $url `
                                 -TimeoutSec 5
 
-                            if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
-                                Write-Host "Hanami ERP disponible."
+                            if ($response.StatusCode -eq 200) {
+
+                                Write-Host "Dash ERP OK"
+
                                 exit 0
                             }
+
                         }
                         catch {
-                            Write-Host "Hanami ERP aun no responde."
+
+                            Write-Host "Dash aun no disponible."
                         }
 
                         Start-Sleep -Seconds 3
                     }
 
-                    throw "Hanami ERP no respondio al health check: $url"
+                    throw "Dash ERP no respondio al health check."
                 '''
             }
         }
